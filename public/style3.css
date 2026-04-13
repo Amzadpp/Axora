@@ -17992,9 +17992,9 @@ form input:focus:required:invalid,form textarea:focus:required:invalid,form inpu
 }
 
 @media(max-width:991px){
-    .mxd-page-content{
+    /* .mxd-page-content{
             overflow: hidden;
-    }
+    } */
     .phone-height-add{
             height: 100vh;
     }

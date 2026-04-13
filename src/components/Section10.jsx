@@ -1,411 +1,112 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useRef, useEffect, useState } from 'react';
 
 export default function Expertise() {
   const sectionRef = useRef(null);
   const headingRef = useRef(null);
   const headingContainerRef = useRef(null);
   const cardsRef = useRef([]);
-  const pinTriggerRef = useRef(null);
+  const [visibleElements, setVisibleElements] = useState({});
+  const [visibleCards, setVisibleCards] = useState({});
+  const [isSticky, setIsSticky] = useState(false);
 
+  // Sticky heading functionality (desktop only)
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-
-    const ctx = gsap.context(() => {
-      
-      // Check if mobile view
-      const isMobile = window.innerWidth < 768;
-      
-      // Sticky heading that stays fixed while scrolling (only for desktop)
-      if (headingContainerRef.current && !isMobile) {
-        // Get the scroll section height
+    const isMobile = window.innerWidth < 768;
+    
+    if (!isMobile && headingContainerRef.current && sectionRef.current) {
+      const handleScroll = () => {
+        const section = sectionRef.current;
+        const headingContainer = headingContainerRef.current;
         const scrollSection = document.querySelector('.mxd-pinned-universal__scroll');
         
-        // Calculate exact end point based on scroll content
-        const getEndPoint = () => {
-          if (scrollSection) {
-            const scrollHeight = scrollSection.scrollHeight;
-            const viewportHeight = window.innerHeight;
-            // End when scroll section content is completely viewed
-            return scrollHeight - viewportHeight + 100;
-          }
-          return 500;
-        };
+        if (!section || !headingContainer || !scrollSection) return;
         
-        // Kill existing trigger if any
-        if (pinTriggerRef.current) {
-          pinTriggerRef.current.kill();
-        }
+        const sectionRect = section.getBoundingClientRect();
+        const scrollSectionRect = scrollSection.getBoundingClientRect();
         
-        // Create proper pin trigger without scrub
-        pinTriggerRef.current = ScrollTrigger.create({
-          trigger: sectionRef.current,
-          start: "top top",
-          end: () => `+=${getEndPoint()}`,
-          pin: headingContainerRef.current,
-          pinSpacing: false,
-          invalidateOnRefresh: true,
-          onLeave: () => {
-            // When pinning ends, reset position
-            if (headingContainerRef.current) {
-              headingContainerRef.current.style.position = 'relative';
-              headingContainerRef.current.style.top = '0';
-            }
-          },
-          onEnterBack: () => {
-            // When scrolling back, reapply pinning
-            if (headingContainerRef.current && !isMobile) {
-              headingContainerRef.current.style.position = '';
-            }
-          }
-        });
-      } else if (headingContainerRef.current && isMobile) {
-        // On mobile, ensure no pinning
-        headingContainerRef.current.style.position = 'relative';
-      }
-
-      // Smooth scroll-triggered animation for heading
-      if (headingRef.current) {
-        if (!isMobile) {
-          gsap.fromTo(headingRef.current,
-            {
-              y: 100,
-              opacity: 0,
-            },
-            {
-              y: 0,
-              opacity: 1,
-              duration: 1.5,
-              ease: "power2.out",
-              scrollTrigger: {
-                trigger: headingRef.current,
-                start: "top 80%",
-                end: "top 40%",
-                scrub: 1.2,
-                toggleActions: "play none none reverse",
-              }
-            }
-          );
+        // Calculate when to pin
+        const shouldSticky = sectionRect.top <= 0 && scrollSectionRect.bottom > window.innerHeight;
+        
+        if (shouldSticky) {
+          setIsSticky(true);
+          headingContainer.style.position = 'fixed';
+          headingContainer.style.top = '100px';
+          headingContainer.style.left = `${sectionRect.left}px`;
+          headingContainer.style.width = `${sectionRect.width}px`;
+          headingContainer.style.zIndex = '100';
         } else {
-          // Mobile: Simple animation without scrub
-          gsap.fromTo(headingRef.current,
-            {
-              y: 50,
-              opacity: 0,
-            },
-            {
-              y: 0,
-              opacity: 1,
-              duration: 0.8,
-              ease: "power2.out",
-              scrollTrigger: {
-                trigger: headingRef.current,
-                start: "top 85%",
-                end: "top 60%",
-                toggleActions: "play none none reverse",
-              }
-            }
-          );
+          setIsSticky(false);
+          headingContainer.style.position = 'relative';
+          headingContainer.style.top = 'auto';
+          headingContainer.style.left = 'auto';
+          headingContainer.style.width = 'auto';
         }
-      }
-
-      // Animate cards with stagger and smooth scroll effect
-      cardsRef.current.forEach((card, index) => {
-        if (card) {
-          if (!isMobile) {
-            // Desktop: Complex animations with scrub
-            const fromX = index % 2 === 0 ? -50 : 50;
-            const fromY = Math.floor(index / 2) % 2 === 0 ? -30 : 30;
-            
-            gsap.fromTo(card,
-              {
-                opacity: 0,
-                x: fromX,
-                y: fromY,
-                scale: 0.8,
-              },
-              {
-                opacity: 1,
-                x: 0,
-                y: 0,
-                scale: 1,
-                duration: 1,
-                ease: "power3.out",
-                scrollTrigger: {
-                  trigger: card,
-                  start: "top 85%",
-                  end: "top 40%",
-                  scrub: 0.8,
-                  toggleActions: "play none none reverse",
-                }
-              }
-            );
-
-            // Icon bounce effect on scroll
-            const icon = card.querySelector('.mxd-tech-stack-cards__icon');
-            if (icon) {
-              gsap.fromTo(icon,
-                {
-                  scale: 0.5,
-                  rotate: -180,
-                },
-                {
-                  scale: 1,
-                  rotate: 0,
-                  duration: 0.8,
-                  ease: "back.out(1.2)",
-                  scrollTrigger: {
-                    trigger: card,
-                    start: "top 85%",
-                    end: "top 50%",
-                    scrub: 0.6,
-                  }
-                }
-              );
-            }
-          } else {
-            // Mobile: Simple animations without scrub
-            gsap.fromTo(card,
-              {
-                opacity: 0,
-                y: 30,
-                scale: 0.9,
-              },
-              {
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                duration: 0.6,
-                ease: "power2.out",
-                scrollTrigger: {
-                  trigger: card,
-                  start: "top 90%",
-                  end: "top 70%",
-                  toggleActions: "play none none reverse",
-                }
-              }
-            );
-
-            // Simple icon animation for mobile
-            const icon = card.querySelector('.mxd-tech-stack-cards__icon');
-            if (icon) {
-              gsap.fromTo(icon,
-                {
-                  scale: 0.8,
-                },
-                {
-                  scale: 1,
-                  duration: 0.4,
-                  ease: "back.out(1.2)",
-                  scrollTrigger: {
-                    trigger: card,
-                    start: "top 90%",
-                    end: "top 70%",
-                  }
-                }
-              );
-            }
-          }
-        }
-      });
-
-      // Grid cards container animation
-      const gridContainer = document.querySelector('.grid-cards');
-      if (gridContainer) {
-        if (!isMobile) {
-          gsap.fromTo(gridContainer,
-            {
-              opacity: 0,
-            },
-            {
-              opacity: 1,
-              duration: 1,
-              scrollTrigger: {
-                trigger: gridContainer,
-                start: "top 80%",
-                end: "top 30%",
-                scrub: 0.5,
-              }
-            }
-          );
-        } else {
-          gsap.set(gridContainer, { opacity: 1 });
-        }
-      }
-
-    }, sectionRef);
-
-    // Handle resize to refresh animations
-    const handleResize = () => {
-      ctx.revert();
-      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+      };
       
-      setTimeout(() => {
-        const isMobile = window.innerWidth < 768;
-        
-        if (headingContainerRef.current && !isMobile) {
-          const scrollSection = document.querySelector('.mxd-pinned-universal__scroll');
-          
-          const getEndPoint = () => {
-            if (scrollSection) {
-              const scrollHeight = scrollSection.scrollHeight;
-              const viewportHeight = window.innerHeight;
-              return scrollHeight - viewportHeight + 100;
-            }
-            return 500;
-          };
-          
-          if (pinTriggerRef.current) {
-            pinTriggerRef.current.kill();
-          }
-          
-          pinTriggerRef.current = ScrollTrigger.create({
-            trigger: sectionRef.current,
-            start: "top top",
-            end: () => `+=${getEndPoint()}`,
-            pin: headingContainerRef.current,
-            pinSpacing: false,
-            invalidateOnRefresh: true,
-            onLeave: () => {
-              if (headingContainerRef.current) {
-                headingContainerRef.current.style.position = 'relative';
-                headingContainerRef.current.style.top = '0';
-              }
-            },
-            onEnterBack: () => {
-              if (headingContainerRef.current && !isMobile) {
-                headingContainerRef.current.style.position = '';
-              }
-            }
-          });
-        } else if (headingContainerRef.current && isMobile) {
-          headingContainerRef.current.style.position = 'relative';
-          headingContainerRef.current.style.top = '0';
-        }
+      window.addEventListener('scroll', handleScroll);
+      window.addEventListener('resize', handleScroll);
+      handleScroll();
+      
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+        window.removeEventListener('resize', handleScroll);
+      };
+    }
+  }, []);
 
-        if (headingRef.current) {
-          if (!isMobile) {
-            gsap.fromTo(headingRef.current,
-              { y: 100, opacity: 0 },
-              { y: 0, opacity: 1, duration: 1.5, ease: "power2.out",
-                scrollTrigger: {
-                  trigger: headingRef.current,
-                  start: "top 80%",
-                  end: "top 40%",
-                  scrub: 1.2,
-                  toggleActions: "play none none reverse",
-                }
-              }
-            );
-          } else {
-            gsap.fromTo(headingRef.current,
-              { y: 50, opacity: 0 },
-              { y: 0, opacity: 1, duration: 0.8, ease: "power2.out",
-                scrollTrigger: {
-                  trigger: headingRef.current,
-                  start: "top 85%",
-                  end: "top 60%",
-                  toggleActions: "play none none reverse",
-                }
-              }
-            );
-          }
-        }
-
-        cardsRef.current.forEach((card, index) => {
-          if (card) {
-            if (!isMobile) {
-              const fromX = index % 2 === 0 ? -50 : 50;
-              const fromY = Math.floor(index / 2) % 2 === 0 ? -30 : 30;
-              
-              gsap.fromTo(card,
-                { opacity: 0, x: fromX, y: fromY, scale: 0.8 },
-                { opacity: 1, x: 0, y: 0, scale: 1, duration: 1, ease: "power3.out",
-                  scrollTrigger: {
-                    trigger: card,
-                    start: "top 85%",
-                    end: "top 40%",
-                    scrub: 0.8,
-                    toggleActions: "play none none reverse",
-                  }
-                }
-              );
-
-              const icon = card.querySelector('.mxd-tech-stack-cards__icon');
-              if (icon) {
-                gsap.fromTo(icon,
-                  { scale: 0.5, rotate: -180 },
-                  { scale: 1, rotate: 0, duration: 0.8, ease: "back.out(1.2)",
-                    scrollTrigger: {
-                      trigger: card,
-                      start: "top 85%",
-                      end: "top 50%",
-                      scrub: 0.6,
-                    }
-                  }
-                );
+  useEffect(() => {
+    // Create intersection observer for reverse animations
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = entry.target.getAttribute('data-id');
+          if (id) {
+            if (entry.isIntersecting) {
+              // Element entered viewport - ANIMATE IN
+              if (id.startsWith('card-')) {
+                setVisibleCards((prev) => ({ ...prev, [id]: true }));
+              } else {
+                setVisibleElements((prev) => ({ ...prev, [id]: true }));
               }
             } else {
-              gsap.fromTo(card,
-                { opacity: 0, y: 30, scale: 0.9 },
-                { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "power2.out",
-                  scrollTrigger: {
-                    trigger: card,
-                    start: "top 90%",
-                    end: "top 70%",
-                    toggleActions: "play none none reverse",
-                  }
-                }
-              );
-
-              const icon = card.querySelector('.mxd-tech-stack-cards__icon');
-              if (icon) {
-                gsap.fromTo(icon,
-                  { scale: 0.8 },
-                  { scale: 1, duration: 0.4, ease: "back.out(1.2)",
-                    scrollTrigger: {
-                      trigger: card,
-                      start: "top 90%",
-                      end: "top 70%",
-                    }
-                  }
-                );
+              // Element left viewport - REVERSE ANIMATION (ANIMATE OUT)
+              if (id.startsWith('card-')) {
+                setVisibleCards((prev) => ({ ...prev, [id]: false }));
+              } else {
+                setVisibleElements((prev) => ({ ...prev, [id]: false }));
               }
             }
           }
         });
-
-        const gridContainer = document.querySelector('.grid-cards');
-        if (gridContainer && !isMobile) {
-          gsap.fromTo(gridContainer,
-            { opacity: 0 },
-            { opacity: 1, duration: 1,
-              scrollTrigger: {
-                trigger: gridContainer,
-                start: "top 80%",
-                end: "top 30%",
-                scrub: 0.5,
-              }
-            }
-          );
-        } else if (gridContainer && isMobile) {
-          gsap.set(gridContainer, { opacity: 1 });
-        }
-      }, 100);
-    };
-
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      ctx.revert();
-      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
-      if (pinTriggerRef.current) {
-        pinTriggerRef.current.kill();
+      },
+      { 
+        threshold: 0.3,
+        rootMargin: "0px 0px -50px 0px"
       }
-      window.removeEventListener('resize', handleResize);
+    );
+
+    // Observe heading
+    if (headingRef.current) {
+      headingRef.current.setAttribute('data-id', 'heading');
+      observer.observe(headingRef.current);
+    }
+
+    // Observe cards
+    cardsRef.current.forEach((card, index) => {
+      if (card) {
+        card.setAttribute('data-id', `card-${index}`);
+        observer.observe(card);
+      }
+    });
+
+    return () => {
+      // Cleanup observer
+      if (headingRef.current) observer.unobserve(headingRef.current);
+      cardsRef.current.forEach((card) => {
+        if (card) observer.unobserve(card);
+      });
     };
   }, []);
 
@@ -414,6 +115,61 @@ export default function Expertise() {
     if (el && !cardsRef.current.includes(el)) {
       cardsRef.current.push(el);
     }
+  };
+
+  // Get animation styles based on visibility
+  const getAnimationStyle = (id, delay = 0) => {
+    const isVisible = visibleElements[id];
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    
+    return {
+      opacity: isVisible ? 1 : 0,
+      transform: isVisible ? 'translateY(0)' : `translateY(${isMobile ? 50 : 100}px)`,
+      transition: `all ${isMobile ? 0.8 : 1.5}s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s`,
+    };
+  };
+
+  // Get card animation styles with different directions
+  const getCardAnimationStyle = (index, isVisible) => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    
+    if (isMobile) {
+      // Mobile: Simple fade up
+      return {
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(30px) scale(0.9)',
+        transition: `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.05}s`,
+      };
+    }
+    
+    // Desktop: Different directions based on position
+    const fromX = index % 2 === 0 ? -50 : 50;
+    const fromY = Math.floor(index / 2) % 2 === 0 ? -30 : 30;
+    
+    return {
+      opacity: isVisible ? 1 : 0,
+      transform: isVisible 
+        ? 'translateX(0) translateY(0) scale(1)' 
+        : `translateX(${fromX}px) translateY(${fromY}px) scale(0.8)`,
+      transition: `all 1s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.05}s`,
+    };
+  };
+
+  // Get icon animation style
+  const getIconAnimationStyle = (index, isVisible) => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    
+    if (isMobile) {
+      return {
+        transform: isVisible ? 'scale(1)' : 'scale(0.8)',
+        transition: `all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) ${index * 0.05}s`,
+      };
+    }
+    
+    return {
+      transform: isVisible ? 'scale(1) rotate(0deg)' : 'scale(0.5) rotate(-180deg)',
+      transition: `all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) ${index * 0.05}s`,
+    };
   };
 
   const techCards = [
@@ -436,13 +192,24 @@ export default function Expertise() {
               <div className="row gx-0">
 
                 <div className="col-12 col-xl-5 mxd-pinned-universal__static">
-                  <div className="mxd-pinned-universal__static-inner no-margin" ref={headingContainerRef}>
+                  <div 
+                    className="mxd-pinned-universal__static-inner no-margin" 
+                    ref={headingContainerRef}
+                    style={{
+                      transition: 'all 0.3s ease',
+                      zIndex: 100
+                    }}
+                  >
                     <div className="mxd-section-title h2-only no-margin-desktop">
                       <div className="container-fluid p-0">
                         <div className="row g-0">
                           <div className="col-12 mxd-grid-item no-margin">
                             <div className="mxd-section-title__title card-split-title">
-                              <h2 className="reveal-type" ref={headingRef}>
+                              <h2 
+                                className="reveal-type" 
+                                ref={headingRef}
+                                style={getAnimationStyle('heading', 0)}
+                              >
                                 My favorite<br />stack
                               </h2>
                             </div>
@@ -455,32 +222,39 @@ export default function Expertise() {
 
                 <div className="col-12 col-xl-7 mxd-pinned-universal__scroll">
                   <div className="mxd-pinned-universal__scroll-inner mxd-grid-item no-margin">
-                    <div className="mxd-tech-stack-cards grid-cards">
-                      {techCards.map((card, index) => (
-                        <div 
-                          key={index}
-                          className="mxd-tech-stack-cards__item animate-card-4"
-                          ref={addToCardRef}
-                        >
-                          <div className="mxd-tech-stack-cards__inner-v2">
-                            <div className="mxd-tech-stack-cards__icon">
-                              <img
-                                alt={card.name}
-                                loading="lazy"
-                                width="300"
-                                height="300"
-                                decoding="async"
-                                data-nimg="1"
-                                style={{ color: "transparent" }}
-                                src={card.img}
-                              />
-                            </div>
-                            <div className="mxd-tech-stack-cards__title">
-                              <p className="t-bright t-caption">{card.name}</p>
+                    <div className="mxd-tech-stack-cards grid-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '20px' }}>
+                      {techCards.map((card, index) => {
+                        const isCardVisible = visibleCards[`card-${index}`];
+                        return (
+                          <div 
+                            key={index}
+                            className="mxd-tech-stack-cards__item animate-card-4"
+                            ref={addToCardRef}
+                            style={getCardAnimationStyle(index, isCardVisible)}
+                          >
+                            <div className="mxd-tech-stack-cards__inner-v2">
+                              <div 
+                                className="mxd-tech-stack-cards__icon"
+                                style={getIconAnimationStyle(index, isCardVisible)}
+                              >
+                                <img
+                                  alt={card.name}
+                                  loading="lazy"
+                                  width="300"
+                                  height="300"
+                                  decoding="async"
+                                  data-nimg="1"
+                                  style={{ color: "transparent", width: '60px', height: '60px', objectFit: 'contain' }}
+                                  src={card.img}
+                                />
+                              </div>
+                              <div className="mxd-tech-stack-cards__title">
+                                <p className="t-bright t-caption">{card.name}</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

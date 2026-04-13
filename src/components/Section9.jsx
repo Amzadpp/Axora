@@ -1,8 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useRef, useEffect, useState } from 'react';
 
 export default function Section9() {
   const sectionRef = useRef(null);
@@ -10,281 +8,97 @@ export default function Section9() {
   const headingContainerRef = useRef(null);
   const listItemsRef = useRef([]);
   const listContentsRef = useRef([]);
+  const [visibleElements, setVisibleElements] = useState({});
+  const [isSticky, setIsSticky] = useState(false);
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-
-    const ctx = gsap.context(() => {
-      
-      // Check if mobile view
-      const isMobile = window.innerWidth < 768;
-      
-      // Fix: Proper sticky heading using ScrollTrigger pin (for desktop)
-      if (headingContainerRef.current && sectionRef.current && !isMobile) {
-        // Get the scroll section height
-        const scrollSection = document.querySelector('.mxd-pinned-universal__scroll');
-        const scrollHeight = scrollSection ? scrollSection.offsetHeight : 500;
-        
-        // Create pin trigger that lasts until the very end of the scroll section
-        ScrollTrigger.create({
-          trigger: sectionRef.current,
-          start: "top top",
-          end: () => `+=${scrollHeight}`, // End after scrolling through the entire right column
-          pin: headingContainerRef.current,
-          pinSpacing: false,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            // Optional: Add effect when reaching end
-            if (self.progress >= 0.99) {
-              headingContainerRef.current.style.opacity = '0.8';
-            } else {
-              headingContainerRef.current.style.opacity = '1';
-            }
-          }
-        });
-      }
-
-      // Smooth scroll-triggered animation for heading text (only for desktop)
-      if (headingRef.current && !isMobile) {
-        gsap.fromTo(headingRef.current,
-          {
-            y: 100,
-            opacity: 0,
-          },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 1.5,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: headingRef.current,
-              start: "top 80%",
-              end: "top 40%",
-              scrub: 1.2,
-              toggleActions: "play none none reverse",
-            }
-          }
-        );
-      } else if (headingRef.current && isMobile) {
-        // Mobile: Simple animation without scrub
-        gsap.fromTo(headingRef.current,
-          {
-            y: 50,
-            opacity: 0,
-          },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.8,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: headingRef.current,
-              start: "top 85%",
-              end: "top 60%",
-              toggleActions: "play none none reverse",
-            }
-          }
-        );
-      }
-
-      // Ultra-smooth animation for each list item
-      listItemsRef.current.forEach((item, index) => {
-        if (item) {
-          // Different animation for mobile vs desktop
-          if (!isMobile) {
-            gsap.fromTo(item,
-              {
-                opacity: 0,
-                y: 80,
-              },
-              {
-                opacity: 1,
-                y: 0,
-                duration: 1.2,
-                ease: "power2.out",
-                scrollTrigger: {
-                  trigger: item,
-                  start: "top 85%",
-                  end: "top 30%",
-                  scrub: 1,
-                  toggleActions: "play none none reverse",
-                }
-              }
-            );
-
-            const content = listContentsRef.current[index];
-            if (content) {
-              gsap.fromTo(content,
-                {
-                  opacity: 0,
-                  x: -30,
-                },
-                {
-                  opacity: 1,
-                  x: 0,
-                  duration: 1,
-                  ease: "power2.out",
-                  scrollTrigger: {
-                    trigger: item,
-                    start: "top 80%",
-                    end: "top 35%",
-                    scrub: 0.8,
-                  }
-                }
-              );
-            }
-          } else {
-            // Mobile: Simple animation without scrub to prevent hide/show
-            gsap.fromTo(item,
-              {
-                opacity: 0,
-                y: 40,
-              },
-              {
-                opacity: 1,
-                y: 0,
-                duration: 0.6,
-                ease: "power2.out",
-                scrollTrigger: {
-                  trigger: item,
-                  start: "top 90%",
-                  end: "top 70%",
-                  toggleActions: "play none none reverse",
-                }
-              }
-            );
-
-            const content = listContentsRef.current[index];
-            if (content) {
-              gsap.set(content, { opacity: 1, x: 0 });
-            }
-          }
-        }
-      });
-
-    }, sectionRef);
-
-    // Handle resize to refresh animations
-    const handleResize = () => {
-      ctx.revert();
-      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
-      
-      // Re-initialize after resize
-      setTimeout(() => {
-        const isMobile = window.innerWidth < 768;
-        
-        if (headingContainerRef.current && sectionRef.current && !isMobile) {
-          const scrollSection = document.querySelector('.mxd-pinned-universal__scroll');
-          const scrollHeight = scrollSection ? scrollSection.offsetHeight : 500;
-          
-          // Recreate pin
-          ScrollTrigger.create({
-            trigger: sectionRef.current,
-            start: "top top",
-            end: () => `+=${scrollHeight}`,
-            pin: headingContainerRef.current,
-            pinSpacing: false,
-            invalidateOnRefresh: true,
-            onUpdate: (self) => {
-              if (self.progress >= 0.99) {
-                headingContainerRef.current.style.opacity = '0.8';
-              } else {
-                headingContainerRef.current.style.opacity = '1';
-              }
-            }
-          });
-        }
-
-        // Re-trigger heading animation
-        if (headingRef.current) {
-          if (!isMobile) {
-            gsap.fromTo(headingRef.current,
-              { y: 100, opacity: 0 },
-              { y: 0, opacity: 1, duration: 1.5, ease: "power2.out",
-                scrollTrigger: {
-                  trigger: headingRef.current,
-                  start: "top 80%",
-                  end: "top 40%",
-                  scrub: 1.2,
-                  toggleActions: "play none none reverse",
-                }
-              }
-            );
-          } else {
-            gsap.fromTo(headingRef.current,
-              { y: 50, opacity: 0 },
-              { y: 0, opacity: 1, duration: 0.8, ease: "power2.out",
-                scrollTrigger: {
-                  trigger: headingRef.current,
-                  start: "top 85%",
-                  end: "top 60%",
-                  toggleActions: "play none none reverse",
-                }
-              }
-            );
-          }
-        }
-
-        // Re-trigger list items animations
-        listItemsRef.current.forEach((item, index) => {
-          if (item) {
-            if (!isMobile) {
-              gsap.fromTo(item,
-                { opacity: 0, y: 80 },
-                { opacity: 1, y: 0, duration: 1.2, ease: "power2.out",
-                  scrollTrigger: {
-                    trigger: item,
-                    start: "top 85%",
-                    end: "top 30%",
-                    scrub: 1,
-                    toggleActions: "play none none reverse",
-                  }
-                }
-              );
-
-              const content = listContentsRef.current[index];
-              if (content) {
-                gsap.fromTo(content,
-                  { opacity: 0, x: -30 },
-                  { opacity: 1, x: 0, duration: 1, ease: "power2.out",
-                    scrollTrigger: {
-                      trigger: item,
-                      start: "top 80%",
-                      end: "top 35%",
-                      scrub: 0.8,
-                    }
-                  }
-                );
-              }
-            } else {
-              gsap.fromTo(item,
-                { opacity: 0, y: 40 },
-                { opacity: 1, y: 0, duration: 0.6, ease: "power2.out",
-                  scrollTrigger: {
-                    trigger: item,
-                    start: "top 90%",
-                    end: "top 70%",
-                    toggleActions: "play none none reverse",
-                  }
-                }
-              );
-
-              const content = listContentsRef.current[index];
-              if (content) {
-                gsap.set(content, { opacity: 1, x: 0 });
-              }
-            }
-          }
-        });
-      }, 100);
-    };
-
-    window.addEventListener('resize', handleResize);
+    // Check if mobile
+    const isMobile = window.innerWidth < 768;
     
+    // Sticky heading functionality (desktop only)
+    if (!isMobile && headingContainerRef.current && sectionRef.current) {
+      const handleScroll = () => {
+        const section = sectionRef.current;
+        const headingContainer = headingContainerRef.current;
+        const scrollSection = document.querySelector('.mxd-pinned-universal__scroll');
+        
+        if (!section || !headingContainer || !scrollSection) return;
+        
+        const sectionRect = section.getBoundingClientRect();
+        const scrollSectionRect = scrollSection.getBoundingClientRect();
+        
+        // Calculate when to pin
+        const shouldSticky = sectionRect.top <= 0 && scrollSectionRect.bottom > window.innerHeight;
+        
+        if (shouldSticky) {
+          setIsSticky(true);
+          headingContainer.style.position = 'fixed';
+          headingContainer.style.top = '100px';
+          headingContainer.style.left = `${sectionRect.left}px`;
+          headingContainer.style.width = `${sectionRect.width}px`;
+        } else {
+          setIsSticky(false);
+          headingContainer.style.position = 'relative';
+          headingContainer.style.top = 'auto';
+          headingContainer.style.left = 'auto';
+          headingContainer.style.width = 'auto';
+        }
+      };
+      
+      window.addEventListener('scroll', handleScroll);
+      window.addEventListener('resize', handleScroll);
+      handleScroll();
+      
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+        window.removeEventListener('resize', handleScroll);
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    // Create intersection observer for reverse animations
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = entry.target.getAttribute('data-id');
+          if (id) {
+            if (entry.isIntersecting) {
+              // Element entered viewport - ANIMATE IN
+              setVisibleElements((prev) => ({ ...prev, [id]: true }));
+            } else {
+              // Element left viewport - REVERSE ANIMATION (ANIMATE OUT)
+              setVisibleElements((prev) => ({ ...prev, [id]: false }));
+            }
+          }
+        });
+      },
+      { 
+        threshold: 0.3,
+        rootMargin: "0px 0px -50px 0px"
+      }
+    );
+
+    // Observe heading
+    if (headingRef.current) {
+      headingRef.current.setAttribute('data-id', 'heading');
+      observer.observe(headingRef.current);
+    }
+
+    // Observe list items
+    listItemsRef.current.forEach((item, index) => {
+      if (item) {
+        item.setAttribute('data-id', `list-${index}`);
+        observer.observe(item);
+      }
+    });
+
     return () => {
-      ctx.revert();
-      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
-      window.removeEventListener('resize', handleResize);
+      // Cleanup observer
+      if (headingRef.current) observer.unobserve(headingRef.current);
+      listItemsRef.current.forEach((item) => {
+        if (item) observer.unobserve(item);
+      });
     };
   }, []);
 
@@ -298,6 +112,38 @@ export default function Section9() {
     if (el && !listContentsRef.current.includes(el)) {
       listContentsRef.current[index] = el;
     }
+  };
+
+  // Get animation styles based on visibility
+  const getAnimationStyle = (id, delay = 0, type = 'fade-up') => {
+    const isVisible = visibleElements[id];
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    
+    if (type === 'fade-up') {
+      return {
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : `translateY(${isMobile ? 50 : 100}px)`,
+        transition: `all ${isMobile ? 0.8 : 1.2}s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s`,
+      };
+    }
+    
+    if (type === 'fade-up-item') {
+      return {
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : `translateY(${isMobile ? 40 : 80}px)`,
+        transition: `all ${isMobile ? 0.6 : 1}s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s`,
+      };
+    }
+    
+    if (type === 'slide-right') {
+      return {
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateX(0)' : 'translateX(-30px)',
+        transition: `all 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s`,
+      };
+    }
+    
+    return {};
   };
 
   const experienceItems = [
@@ -332,13 +178,26 @@ export default function Section9() {
             <div className="container-fluid px-0">
               <div className="row gx-0">
                 <div className="col-12 col-xl-5 mxd-pinned-universal__static" style={{ position: 'relative' }}>
-                  <div className="mxd-pinned-universal__static-inner no-margin" ref={headingContainerRef}>
+                  <div 
+                    className="mxd-pinned-universal__static-inner no-margin" 
+                    ref={headingContainerRef}
+                    style={{
+                      transition: 'all 0.3s ease',
+                      zIndex: 100
+                    }}
+                  >
                     <div className="mxd-section-title h2-only no-margin-desktop">
                       <div className="container-fluid p-0">
                         <div className="row g-0">
                           <div className="col-12 mxd-grid-item no-margin">
                             <div className="mxd-section-title__title card-split-title">
-                              <h2 className="reveal-type" ref={headingRef}>Experience</h2>
+                              <h2 
+                                className="reveal-type" 
+                                ref={headingRef}
+                                style={getAnimationStyle('heading', 0, 'fade-up')}
+                              >
+                                Experience
+                              </h2>
                             </div>
                           </div>
                         </div>
@@ -354,11 +213,17 @@ export default function Section9() {
                           key={index} 
                           className="mxd-res-list__item"
                           ref={(el) => addToListRef(el, index)}
+                          data-id={`list-${index}`}
+                          style={getAnimationStyle(`list-${index}`, index * 0.15, 'fade-up-item')}
                         >
-                          <div className="mxd-res-list__divider"></div>
+                          <div 
+                            className="mxd-res-list__divider"
+                            style={getAnimationStyle(`list-${index}`, index * 0.15, 'fade-up-item')}
+                          ></div>
                           <div 
                             className="mxd-res-list__content"
                             ref={(el) => addToContentRef(el, index)}
+                            style={getAnimationStyle(`list-${index}`, index * 0.15 + 0.1, 'slide-right')}
                           >
                             <div className="mxd-res-list__data">
                               <div className="mxd-res-list__title">
@@ -373,7 +238,10 @@ export default function Section9() {
                               <p>{item.year}</p>
                             </div>
                           </div>
-                          <div className="mxd-res-list__divider"></div>
+                          <div 
+                            className="mxd-res-list__divider"
+                            style={getAnimationStyle(`list-${index}`, index * 0.15 + 0.2, 'fade-up-item')}
+                          ></div>
                         </div>
                       ))}
                     </div>

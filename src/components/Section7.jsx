@@ -1,8 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useRef, useEffect, useState } from 'react';
 
 export default function Expertise() {
   const sectionRef = useRef(null);
@@ -10,150 +8,98 @@ export default function Expertise() {
   const buttonRef = useRef(null);
   const listItemsRef = useRef([]);
   const hoverContentsRef = useRef([]);
+  const [visibleElements, setVisibleElements] = useState({});
+  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0, visible: false, activeIndex: null });
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-
-    const ctx = gsap.context(() => {
-      
-      // Animate heading
-      if (headingRef.current) {
-        gsap.fromTo(headingRef.current,
-          {
-            y: 60,
-            opacity: 0,
-          },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 1,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: headingRef.current,
-              start: "top 85%",
-              end: "bottom 60%",
-              toggleActions: "play none none reverse",
-              scrub: 0.5,
+    // Create intersection observer for reverse animations
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = entry.target.getAttribute('data-id');
+          if (id) {
+            if (entry.isIntersecting) {
+              // Element entered viewport - ANIMATE IN
+              setVisibleElements((prev) => ({ ...prev, [id]: true }));
+            } else {
+              // Element left viewport - REVERSE ANIMATION (ANIMATE OUT)
+              setVisibleElements((prev) => ({ ...prev, [id]: false }));
             }
           }
-        );
-      }
-
-      // Animate button
-      if (buttonRef.current) {
-        gsap.fromTo(buttonRef.current,
-          {
-            y: 60,
-            opacity: 0,
-          },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 1,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: buttonRef.current,
-              start: "top 85%",
-              end: "bottom 60%",
-              toggleActions: "play none none reverse",
-              scrub: 0.5,
-            }
-          }
-        );
-      }
-
-      // Animate list items with stagger effect
-      if (listItemsRef.current.length > 0) {
-        gsap.fromTo(listItemsRef.current,
-          {
-            y: 50,
-            opacity: 0,
-          },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.8,
-            stagger: 0.1,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: listItemsRef.current[0],
-              start: "top 85%",
-              end: "bottom 60%",
-              toggleActions: "play none none reverse",
-              scrub: 0.5,
-            }
-          }
-        );
-      }
-
-    }, sectionRef);
-
-    // Hover effects
-    const handleMouseEnter = (index, event) => {
-      const hoverContent = hoverContentsRef.current[index];
-      if (hoverContent) {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        
-        gsap.to(hoverContent, {
-          opacity: 1,
-          duration: 0.3,
-          ease: "power2.out",
-          left: `${x}px`,
-          top: `${y}px`,
-          transform: 'translate(-50%, -50%)',
         });
+      },
+      { 
+        threshold: 0.3,
+        rootMargin: "0px 0px -50px 0px"
       }
-    };
+    );
 
-    const handleMouseMove = (index, event) => {
-      const hoverContent = hoverContentsRef.current[index];
-      if (hoverContent && hoverContent.style.opacity === '1') {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        
-        gsap.to(hoverContent, {
-          left: `${x}px`,
-          top: `${y}px`,
-          duration: 0.1,
-          ease: "power1.out",
-        });
-      }
-    };
+    // Observe heading
+    if (headingRef.current) {
+      headingRef.current.setAttribute('data-id', 'heading');
+      observer.observe(headingRef.current);
+    }
 
-    const handleMouseLeave = (index) => {
-      const hoverContent = hoverContentsRef.current[index];
-      if (hoverContent) {
-        gsap.to(hoverContent, {
-          opacity: 0,
-          duration: 0.3,
-          ease: "power2.in",
-        });
-      }
-    };
+    // Observe button
+    if (buttonRef.current) {
+      buttonRef.current.setAttribute('data-id', 'button');
+      observer.observe(buttonRef.current);
+    }
 
-    // Attach hover event listeners
+    // Observe list items
     listItemsRef.current.forEach((item, index) => {
       if (item) {
-        item.addEventListener('mouseenter', (e) => handleMouseEnter(index, e));
-        item.addEventListener('mousemove', (e) => handleMouseMove(index, e));
-        item.addEventListener('mouseleave', () => handleMouseLeave(index));
+        item.setAttribute('data-id', `list-${index}`);
+        observer.observe(item);
       }
     });
 
     return () => {
-      ctx.revert();
-      listItemsRef.current.forEach((item, index) => {
-        if (item) {
-          item.removeEventListener('mouseenter', (e) => handleMouseEnter(index, e));
-          item.removeEventListener('mousemove', (e) => handleMouseMove(index, e));
-          item.removeEventListener('mouseleave', () => handleMouseLeave(index));
-        }
+      // Cleanup observer
+      if (headingRef.current) observer.unobserve(headingRef.current);
+      if (buttonRef.current) observer.unobserve(buttonRef.current);
+      listItemsRef.current.forEach((item) => {
+        if (item) observer.unobserve(item);
       });
     };
   }, []);
+
+  // Hover effects handlers
+  const handleMouseEnter = (index, event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    setHoverPosition({
+      x: x,
+      y: y,
+      visible: true,
+      activeIndex: index
+    });
+  };
+
+  const handleMouseMove = (index, event) => {
+    if (hoverPosition.activeIndex === index && hoverPosition.visible) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      setHoverPosition(prev => ({
+        ...prev,
+        x: x,
+        y: y
+      }));
+    }
+  };
+
+  const handleMouseLeave = (index) => {
+    setHoverPosition({
+      x: 0,
+      y: 0,
+      visible: false,
+      activeIndex: null
+    });
+  };
 
   const addToListRef = (el) => {
     if (el && !listItemsRef.current.includes(el)) {
@@ -161,10 +107,27 @@ export default function Expertise() {
     }
   };
 
-  const addToHoverRef = (el, index) => {
-    if (el && !hoverContentsRef.current[index]) {
-      hoverContentsRef.current[index] = el;
+  // Get animation styles based on visibility
+  const getAnimationStyle = (id, delay = 0, type = 'fade-up') => {
+    const isVisible = visibleElements[id];
+    
+    if (type === 'fade-up') {
+      return {
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(60px)',
+        transition: `all 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s`,
+      };
     }
+    
+    if (type === 'fade-up-slow') {
+      return {
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(50px)',
+        transition: `all 1s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s`,
+      };
+    }
+    
+    return {};
   };
 
   const expertiseItems = [
@@ -178,6 +141,38 @@ export default function Expertise() {
 
   return (
     <div className="mxd-section overflow-hidden padding-default" ref={sectionRef}>
+      {/* Hover Content - Fixed Position */}
+      {hoverPosition.visible && hoverPosition.activeIndex !== null && (
+        <div 
+          className="hover-reveal__content hover-reveal-280x340"
+          style={{
+            position: 'fixed',
+            left: `${hoverPosition.x}px`,
+            top: `${hoverPosition.y}px`,
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            zIndex: 1000,
+            width: '280px',
+            height: '340px',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            opacity: 1,
+            transition: 'left 0.1s ease, top 0.1s ease'
+          }}
+        >
+          <img
+            alt="Illustration"
+            loading="lazy"
+            width="300"
+            height="300"
+            decoding="async"
+            data-nimg="1"
+            style={{ color: "transparent", width: '100%', height: '100%', objectFit: 'cover' }}
+            src={expertiseItems[hoverPosition.activeIndex]?.hoverImg}
+          />
+        </div>
+      )}
+
       <div className="mxd-container grid-container">
         <div className="mxd-block">
           <div className="mxd-section-title">
@@ -185,12 +180,22 @@ export default function Expertise() {
               <div className="row g-0">
                 <div className="col-12 col-xl-6 mxd-grid-item no-margin">
                   <div className="mxd-section-title__hrtitle">
-                    <h2 className="reveal-type reveal-type" ref={headingRef}>My expertise</h2>
+                    <h2 
+                      className="reveal-type reveal-type" 
+                      ref={headingRef}
+                      style={getAnimationStyle('heading', 0, 'fade-up')}
+                    >
+                      My expertise
+                    </h2>
                   </div>
                 </div>
                 <div className="col-12 col-xl-3 mxd-grid-item no-margin"></div>
                 <div className="col-12 col-xl-3 mxd-grid-item no-margin">
-                  <div className="mxd-section-title__hrcontrols anim-uni-in-up" ref={buttonRef}>
+                  <div 
+                    className="mxd-section-title__hrcontrols anim-uni-in-up" 
+                    ref={buttonRef}
+                    style={getAnimationStyle('button', 0.1, 'fade-up')}
+                  >
                     <a className="btn-anim btn btn-anim btn-default btn-outline slide-right-up" aria-label="All Services" href="/services">
                       <span className="btn-caption">
                         <div className="btn-anim__block">All Services</div>
@@ -214,44 +219,28 @@ export default function Expertise() {
                       key={idx}
                       className="mxd-cpb-list__item hover-reveal__item"
                       ref={addToListRef}
+                      data-id={`list-${idx}`}
+                      onMouseEnter={(e) => handleMouseEnter(idx, e)}
+                      onMouseMove={(e) => handleMouseMove(idx, e)}
+                      onMouseLeave={() => handleMouseLeave(idx)}
                     >
-                      <div className="mxd-cpb-list__divider anim-uni-in-up"></div>
                       <div 
-                        className="hover-reveal__content hover-reveal-280x340" 
-                        ref={(el) => addToHoverRef(el, idx)}
-                        style={{
-                          opacity: 0,
-                          transform: 'translate(-50%, -50%)',
-                          left: 0,
-                          top: 0,
-                          position: 'fixed',
-                          pointerEvents: 'none',
-                          transition: 'opacity 0.3s ease',
-                          zIndex: 1000,
-                          width: '280px',
-                          height: '340px',
-                          borderRadius: '16px',
-                          overflow: 'hidden'
-                        }}
+                        className="mxd-cpb-list__divider anim-uni-in-up"
+                        style={getAnimationStyle(`list-${idx}`, idx * 0.1, 'fade-up-slow')}
+                      ></div>
+                      <div 
+                        className="mxd-cpb-list__content anim-uni-in-up"
+                        style={getAnimationStyle(`list-${idx}`, idx * 0.1 + 0.05, 'fade-up-slow')}
                       >
-                        <img
-                          alt="Illustration"
-                          loading="lazy"
-                          width="300"
-                          height="300"
-                          decoding="async"
-                          data-nimg="1"
-                          style={{ color: "transparent", width: '100%', height: '100%', objectFit: 'cover' }}
-                          src={item.hoverImg}
-                        />
-                      </div>
-                      <div className="mxd-cpb-list__content anim-uni-in-up">
                         <h6 className="mxd-cpb-list__title">{item.title}</h6>
                         <div className="mxd-cpb-list__num">
                           <span>/ {item.number}</span>
                         </div>
                       </div>
-                      <div className="mxd-cpb-list__image anim-uni-in-up">
+                      <div 
+                        className="mxd-cpb-list__image anim-uni-in-up"
+                        style={getAnimationStyle(`list-${idx}`, idx * 0.1 + 0.1, 'fade-up-slow')}
+                      >
                         <img
                           alt="Illustration"
                           loading="lazy"
@@ -263,7 +252,10 @@ export default function Expertise() {
                           src={item.img}
                         />
                       </div>
-                      <div className="mxd-cpb-list__divider anim-uni-in-up"></div>
+                      <div 
+                        className="mxd-cpb-list__divider anim-uni-in-up"
+                        style={getAnimationStyle(`list-${idx}`, idx * 0.1 + 0.15, 'fade-up-slow')}
+                      ></div>
                     </div>
                   ))}
                 </div>
