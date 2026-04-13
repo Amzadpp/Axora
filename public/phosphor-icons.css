@@ -1,0 +1,63 @@
+/* Phosphor Icons - Full Unicode Fix */
+.ph,
+.ph-fill,
+.ph-bold {
+  display: inline-block !important;
+  font-family: "Phosphor" !important;
+  font-style: normal !important;
+  font-weight: normal !important;
+  font-variant: normal !important;
+  line-height: 1 !important;
+  text-transform: none !important;
+  speak: none !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Core Icons Used */
+.ph-sun:before { content: ""; }
+.ph-moon:before { content: ""; }
+.ph-heart:before, .ph-fill.ph-heart:before { content: ""; }
+.ph-copyright:before { content: ""; }
+.ph-arrow-up-right:before { content: ""; }
+.ph-arrow-elbow-right-down:before { content: ""; }
+
+/* Hero Marquee SVGs */
+.marquee__image svg {
+  display: inline-block !important;
+  width: 2.4rem !important;
+  height: 2.4rem !important;
+  fill: currentColor !important;
+  vertical-align: middle !important;
+  stroke: none !important;
+}
+
+/* Mark Icon */
+.mark-icon {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+}
+.mark-icon::before {
+  content: "★" !important;
+  font-size: 2.4rem;
+  color: var(--accent, #9f8be7);
+}
+
+/* All i.ph elements */
+i[class*="ph-"] {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  font-family: "Phosphor" !important;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+/* Higher specificity for stubborn icons */
+i.ph-fill.ph-heart:before,
+i.ph.ph-heart:before {
+  content: "♥" !important; /* fallback heart */
+}
